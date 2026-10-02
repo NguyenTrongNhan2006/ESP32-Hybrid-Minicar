@@ -17,7 +17,7 @@ Firmware **C thuần trên ESP-IDF** cho ESP32-WROOM/DevKit, điều khiển th�
 | `firmware/esp-idf/` | Firmware chính bằng C, ESP-IDF 6.0.2; timeout **500 ms**, PING mỗi 100 ms khi giữ RUN |
 | `firmware/wokwi/` | Arduino/Wokwi, timeout **5 giây**, Serial giả lập điện thoại |
 | `docs/` | [About/phạm vi](docs/ABOUT.md), hướng dẫn, pinout, review và test |
-| `schematic/` | Sơ đồ tự tạo bằng Mermaid, hiển thị trên GitHub |
+| `schematic/` | Sơ đồ SVG tự tạo, mở trực tiếp và phóng to |
 | `tests/` | Test C, Arduino, logic giao diện và đối chiếu GPIO |
 | `scripts/` | Build hỗ trợ |
 
