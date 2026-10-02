@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const d = JSON.parse(fs.readFileSync(new URL('../diagram.json', import.meta.url), 'utf8'));
+const d = JSON.parse(fs.readFileSync(new URL('../firmware/wokwi/diagram.json', import.meta.url), 'utf8'));
 const parts = new Map(d.parts.map(p => [p.id, p]));
 assert.equal(parts.size, d.parts.length, 'Unique part IDs');
 for (const [a, b] of d.connections) {
@@ -31,3 +31,8 @@ for (const [gpio, led, resistor, color] of [
 }
 assert(!d.connections.some(([a, b]) => [a, b].includes('pot1:VCC') && [a, b].includes('esp:5V')));
 console.log('PASS diagram: fixed GPIO map, E-Stop, 3V3 potentiometer, LEDs/resistors and analyzer');
+const config = fs.readFileSync(new URL('../firmware/esp-idf/main/vehicle_config.h', import.meta.url), 'utf8');
+for (const [name, pin] of Object.entries({PIN_STEER:18,PIN_GAS:19,PIN_ESC:23,PIN_RCEXL_TEST:26,PIN_ESTOP:27,PIN_BATTERY:34,LED_ARMED:25,LED_FAILSAFE:32,LED_RUNNING:33})) {
+  assert(new RegExp(`#define ${name} ${pin}\\b`).test(config), `Native C pin drift: ${name}`);
+}
+console.log('PASS native ESP-IDF pin map matches Wokwi');

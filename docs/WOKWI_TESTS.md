@@ -2,7 +2,7 @@
 
 Trạng thái xác nhận: host tests kiểm tra logic; GitHub Actions kiểm tra biên dịch ESP32. Các ca mô phỏng tương tác và đo xung bên dưới **chưa được chạy/ghi VCD trong lần cập nhật này**. Không dùng kết quả host tests thay cho đo PWM.
 
-Chuẩn bị: dùng ba file ở root; Serial 115200, newline; biến trở ở mức cao, BAT khoảng 12.6 V; bật ghi Logic Analyzer. Gửi từng lệnh, khoảng cách dưới 5 giây. Sau mỗi STOP/failsafe, đợi thông báo rồi ARM/RUN mới. Nếu trước đó gửi dở dòng, gửi newline trống trước.
+Chuẩn bị: dùng ba file ở `firmware/wokwi/`; Serial 115200, newline; biến trở ở mức cao, BAT khoảng 12.6 V; bật ghi Logic Analyzer. Gửi từng lệnh, khoảng cách dưới 5 giây. Sau mỗi STOP/failsafe, đợi thông báo rồi ARM/RUN mới. Nếu trước đó gửi dở dòng, gửi newline trống trước. Bản C riêng dùng 500 ms, xem HARDWARE_TESTS.md.
 
 Mẫu an toàn **S** dùng trong bảng: STOPPED; lái 90°; ga 0°; D0 khoảng 1000 µs; D1 test khoảng 1000 µs; LED đỏ sáng, xanh/vàng tắt. D0/D1 có chu kỳ khoảng 20 ms. Cho phép sai số lượng tử PWM nhỏ; đo bằng VCD/Logic Analyzer, không dựa vào góc hiển thị để suy ra xung ESC.
 

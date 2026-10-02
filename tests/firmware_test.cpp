@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
-#include "../sketch.ino"
+#include "../firmware/wokwi/sketch.ino"
 
 int assertions = 0;
 #define CHECK(condition) do { ++assertions; if (!(condition)) { \

@@ -1,0 +1,5 @@
+{
+  "idf.flashType": "UART",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "files.associations": { "*.h": "c" }
+}

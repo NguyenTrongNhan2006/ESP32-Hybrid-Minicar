@@ -16,7 +16,10 @@ jobs:
           mkdir -p .build
           g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Itests/stubs tests/firmware_test.cpp -o .build/firmware_test
           .build/firmware_test
+          gcc -std=c11 -Wall -Wextra -Werror -pedantic -Ifirmware/esp-idf/main tests/controller_test.c -o .build/controller_test
+          .build/controller_test
           node tests/check_wiring.mjs
+          node tests/phone_ui_test.mjs
       - uses: arduino/setup-arduino-cli@v2
         with:
           version: '1.5.1'
@@ -33,8 +36,31 @@ jobs:
           path: .build/esp32/
           if-no-files-found: error
       - name: Package Wokwi sources
-        run: zip .build/ESP32-Hybrid-Minicar-Wokwi.zip sketch.ino diagram.json libraries.txt wokwi-project.txt
+        run: |
+          cd firmware/wokwi
+          zip ../../.build/ESP32-Hybrid-Minicar-Wokwi.zip sketch.ino diagram.json libraries.txt wokwi-project.txt
       - uses: actions/upload-artifact@v4
         with:
           name: wokwi-project
           path: .build/ESP32-Hybrid-Minicar-Wokwi.zip
+  native-idf:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v6.0.2
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native C application for ESP32-WROOM
+        shell: bash
+        run: |
+          . /opt/esp/idf/export.sh
+          idf.py -C firmware/esp-idf build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esp32-idf-c-firmware
+          path: |
+            firmware/esp-idf/build/esp32_hybrid_minicar.bin
+            firmware/esp-idf/build/esp32_hybrid_minicar.elf
+            firmware/esp-idf/build/bootloader/bootloader.bin
+            firmware/esp-idf/build/partition_table/partition-table.bin
+            firmware/esp-idf/build/flasher_args.json
+          if-no-files-found: error

@@ -7,3 +7,7 @@ references/
 *.o
 *.log
 .DS_Store
+firmware/esp-idf/build/
+firmware/esp-idf/sdkconfig
+firmware/esp-idf/sdkconfig.old
+firmware/esp-idf/managed_components/

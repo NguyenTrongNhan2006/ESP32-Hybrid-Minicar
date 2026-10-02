@@ -1,5 +1,7 @@
 # Review đầu vào trước khi sửa — 02/10/2026
 
+Đây là review **Arduino/Wokwi ban đầu**. Sau đó người dùng chọn C/ESP-IDF, điện thoại và timeout thử bàn 500 ms; bản C ở `firmware/esp-idf/`, xem ABOUT.md. Wokwi chuyển vào `firmware/wokwi/`, giữ 5 giây. Ghi nhận “bản sửa hiện tại” dưới đây là quyết định tại bước review gốc.
+
 Đã đọc toàn bộ sketch.ino, diagram.json, libraries.txt trong ESP-MiniCar.zip; đọc nhãn GraphML, nội dung HTML và hướng dẫn của bộ 12 sơ đồ; xem ảnh tổng quát, nguồn, GPIO, FSM và RCEXL. Đã đọc các tab của Google Doc EES-Minicar được người dùng gửi. Tài liệu là nguồn tham khảo; yêu cầu trực tiếp của người dùng quyết định phạm vi firmware.
 
 | Lỗi/rủi ro ban đầu | Cách xử lý |

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hybrid Minicar · Điều khiển</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101b26;color:#edf5fb;font:16px system-ui,sans-serif}main{max-width:660px;margin:auto;padding:24px}h1{font-size:29px;margin:6px 0}p{line-height:1.5;color:#b9cad8}.tag{letter-spacing:2px;font-size:12px;color:#59d4bc}.panel{background:#1a2b3b;border:1px solid #314456;border-radius:16px;padding:18px;margin:16px 0}.status{display:flex;justify-content:space-between;gap:12px}#state{font-weight:750}button{border:0;border-radius:12px;padding:16px;font:700 17px system-ui;cursor:pointer}button:disabled{opacity:.45;cursor:default}#arm{background:#62d9bf;color:#102825}#hold{background:#edbf64;color:#302305;touch-action:none;user-select:none;-webkit-user-select:none}#hold.active{background:#ffe194}#stop{background:#e14a57;color:white;width:100%;font-size:23px}.buttons{display:grid;grid-template-columns:1fr 2fr;gap:12px}label{display:block;margin:12px 0}input[type=range]{width:100%;height:36px;accent-color:#65d6bd}output{float:right;font-variant-numeric:tabular-nums}#message{min-height:42px;font-size:14px;overflow-wrap:anywhere}.small{font-size:13px}#connection{color:#edbf64}a{color:#65d6bd}
+</style>
+<main>
+<div class="tag">ESP32 · HYBRID MINICAR</div><h1>Điều khiển thử bàn</h1>
+<p>ARM, sau đó giữ nút RUN để cho phép điều khiển. Thả tay là STOP. Chưa xác nhận vận hành xe thật.</p>
+<div class="panel"><div class="status"><span id="state">CHƯA KẾT NỐI</span><span id="battery">— V SIM</span></div><p id="connection">Đang đọc trạng thái ESP32…</p><div id="message" role="status"></div></div>
+<div class="buttons"><button id="arm" disabled>ARM</button><button id="hold" disabled>GIỮ ĐỂ RUN</button></div>
+<div class="panel">
+<label>Lái <output id="steerValue">90°</output><input id="steer" type="range" min="45" max="135" value="90" disabled></label>
+<label>Ga xăng <output id="gasValue">0%</output><input id="gas" type="range" min="0" max="100" value="0" disabled></label>
+<label>ESC điện <output id="escValue">0%</output><input id="esc" type="range" min="0" max="100" value="0" disabled></label>
+</div>
+<button id="stop">STOP</button>
+<p class="small">GPIO26 là PWM test, không phải xác nhận ON/OFF của RCEXL. BAT lấy từ biến trở GPIO34. Mất lệnh hợp lệ trong 500 ms → STOPPED; khi phát hiện điện thoại rời Wi‑Fi, firmware cũng yêu cầu dừng.</p>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const session = (crypto.getRandomValues(new Uint32Array(1))[0] || 1);
+let sequence = 0, status = null, held = false, generation = 0, lastStatusAt = 0;
+let chain = Promise.resolve(), busy = false, pingPending = false, statusTimer, pingTimer;
+const sliders = ['steer','gas','esc'];
+const pending = new Map();
+function resetControls() {
+  for (const id of sliders) { $(id).value = id === 'steer' ? 90 : 0; $(id+'Value').textContent = $(id).value + (id === 'steer' ? '°' : '%'); $(id).disabled = true; }
+  pending.clear();
+}
+function headers(seq, epoch) {
+  return {'Content-Type':'text/plain','X-Control-Session':String(session),'X-Control-Seq':String(seq),'X-Control-Epoch':String(epoch)};
+}
+async function transmit(line, epoch) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 250);
+  try {
+    const response = await fetch('/api/command', {method:'POST',headers:headers(++sequence,epoch),body:line,signal:controller.signal,keepalive:true});
+    if (!response.ok) throw new Error(await response.text());
+  } finally { clearTimeout(timer); }
+}
+function send(line) {
+  if (!status || (line === 'PING' && pingPending)) return;
+  const atGeneration = generation, epoch = status.epoch, queuedAt = Date.now();
+  if (line === 'PING') pingPending = true;
+  chain = chain.then(async () => {
+    if (atGeneration !== generation) return;
+    if (Date.now() - queuedAt > 150) { stop(); return; }
+    await transmit(line, epoch);
+  }).catch(error => { $('message').textContent = 'Không gửi được lệnh: '+error.message; stop(); })
+    .finally(() => { if (line === 'PING') pingPending = false; });
+}
+function stop() {
+  held = false; ++generation; $('hold').classList.remove('active'); resetControls();
+  if (status) transmit('STOP',status.epoch).catch(() => {});
+}
+$('arm').onclick = () => { resetControls(); send('ARM'); };
+$('hold').onpointerdown = event => {
+  if (!status || status.state !== 'ARMED' || status.owner !== session) return;
+  event.preventDefault(); $('hold').setPointerCapture(event.pointerId);
+  held = true; $('hold').classList.add('active'); send('RUN');
+};
+for (const event of ['pointerup','pointercancel','lostpointercapture']) $('hold').addEventListener(event, () => { if (held) stop(); });
+$('stop').onclick = stop;
+window.addEventListener('blur', () => { if (held) stop(); });
+window.addEventListener('pagehide', stop);
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+for (const id of sliders) $(id).oninput = () => {
+  $(id+'Value').textContent = $(id).value+(id === 'steer' ? '°' : '%');
+  if (held && status?.state === 'RUNNING' && status.owner === session) pending.set(id,$(id).value);
+};
+setInterval(() => { for (const [id,value] of pending) send(id.toUpperCase()+' '+value); pending.clear(); },80);
+pingTimer = setInterval(() => {
+  if (held && !document.hidden && status?.state === 'RUNNING' && status.owner === session && Date.now()-lastStatusAt < 300) send('PING');
+},100);
+async function refresh() {
+  if (busy) return;
+  busy = true;
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(),250);
+  try {
+    const response = await fetch('/api/status',{cache:'no-store',signal:controller.signal});
+    if (!response.ok) throw new Error('status '+response.status);
+    const next = await response.json();
+    if (status && next.epoch !== status.epoch) { held = false; ++generation; resetControls(); $('hold').classList.remove('active'); }
+    status = next; lastStatusAt = Date.now();
+    $('state').textContent = status.state;
+    $('battery').textContent = (status.battery_mv/1000).toFixed(2)+' V SIM';
+    $('connection').textContent = status.owner && status.owner !== session ? 'Một phiên khác đang điều khiển.' : 'Đã kết nối · lần dừng: '+status.last_stop;
+    $('message').textContent = status.message;
+    $('arm').disabled = status.state !== 'STOPPED';
+    $('hold').disabled = !(status.owner === session && (status.state === 'ARMED' || (held && status.state === 'RUNNING')));
+    for (const id of sliders) $(id).disabled = !(held && status.state === 'RUNNING' && status.owner === session);
+    if (!held && status.owner === session && status.state === 'RUNNING') stop();
+    if (status.state === 'STOPPED') resetControls();
+  } catch (error) {
+    $('connection').textContent = 'Mất phản hồi — đang yêu cầu STOP'; $('arm').disabled = $('hold').disabled = true; stop();
+  } finally { clearTimeout(timer); busy = false; }
+}
+statusTimer = setInterval(refresh,150); refresh();
+</script>
+</html>

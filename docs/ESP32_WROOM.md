@@ -1,28 +1,45 @@
-# Chuẩn bị thử bàn trên ESP32-WROOM
+# VS Code + Espressif IDF + C
 
-Target build là **ESP32 Dev Module** (`esp32:esp32:esp32`), phù hợp bước thử với DevKit dùng ESP32-WROOM cổ điển. Xác nhận model/nhãn GPIO của board đang có; đế mở rộng 38 chân không tự chứng minh board và đế khớp nhau. Không dùng số thứ tự chân trên module làm số GPIO.
+Project chính ở `firmware/esp-idf/`; điểm vào là `main/main.c:app_main`. Dùng **ESP-IDF 6.0.2**, target **esp32**, flash 4 MB theo cấu hình DevKit dùng trong project. Kiểm tra dung lượng flash/model thật trước khi nạp. Không chọn S3/C3 cho ESP32-WROOM cổ điển.
 
-## Nạp và thử tín hiệu trước
+## Mở và build
 
-1. Dùng USB cấp nguồn cho riêng DevKit ở bước thử tín hiệu. Build theo README, chọn đúng cổng Serial trong Arduino IDE/CLI.
-2. Giữ pin map 18/19/23/26/27/34/25/32/33. Đấu E-Stop GPIO27–GND; LED với điện trở 220–330 Ω. Xác nhận tín hiệu trên analyzer/oscilloscope trước khi ghép tải.
-3. Dùng biến trở 3V3–GND, SIG GPIO34 để thử logic. BAT lúc này vẫn được ghi SIM; không coi là đo pin thật, kể cả chạy trên ESP32 thật.
-4. Nạp và reset, quan sát các xung từ lúc boot. Kiểm tra đủ ARM/RUN, STOP, giữ E-Stop, timeout, lỗi dòng Serial. Không flash/nối công suất tự động từ các script trong repo.
+1. Clone/download repo vào đường dẫn không dấu, ví dụ `N:\ESP32-Hybrid-Minicar`. Toolchain Windows trên máy làm việc đã lỗi khi dùng đường dẫn OneDrive có dấu.
+2. Mở `ESP32-Hybrid-Minicar-IDF.code-workspace` bằng VS Code; workspace chọn sẵn `firmware/esp-idf`.
+3. Trong extension Espressif IDF, chọn môi trường **6.0.2** đã cài. Mở **ESP-IDF Terminal** để dùng đúng Python, CMake, Ninja và compiler.
+4. Chạy `idf.py set-target esp32` một lần khi mới tạo cấu hình, rồi `idf.py build`. File app là `build/esp32_hybrid_minicar.bin`.
+5. Ngắt tải truyền động/đánh lửa, cấp riêng DevKit qua USB. Chọn cổng COM thật của board, chạy `idf.py -p COMx flash monitor` trong `firmware/esp-idf`.
+6. Monitor 115200; Ctrl+] để thoát. Đọc dòng `PHONE: WiFi ESP32-Hybrid | password ...`. Mật khẩu đổi sau reset.
 
-Đây là sketch Arduino chạy trên Arduino-ESP32. Google Doc có hướng ESP-IDF, nhưng chưa có bản port ESP-IDF thuần trong repo. Không mở trực tiếp sketch bằng idf.py và coi nó là project IDF.
+Ví dụ từ ESP-IDF Terminal, khi đang ở root repo:
 
-## Khi chuyển sang LiPo và tải thật
+```powershell
+Set-Location firmware/esp-idf
+idf.py build
+idf.py -p COMx flash monitor
+```
 
-| Phần | Việc phải xác định trước khi sử dụng |
+COMx là placeholder, phải thay bằng cổng thật. Terminal PowerShell chưa kích hoạt SDK có thể không tìm thấy idf.py. Không chép `build/` hoặc `sdkconfig` cũ từ máy khác vào bản download mới.
+
+## Thử tín hiệu trước khi nối tải
+
+- Đấu LED, E-Stop và biến trở theo [PINOUT](PINOUT.md). BAT SIM phải đủ 10.2 V.
+- Quan sát GPIO18/19/23/26 bằng analyzer có GND tham chiếu. D0/D1 trong Wokwi là tên kênh analyzer, không phải GPIO0/1.
+- ARM → RUN. Bản C timeout 500 ms nên gõ tay thường sẽ timeout: dùng phone UI hoặc bộ gửi PING mỗi 100 ms.
+- Đo xung từ lúc boot/reset; trạng thái chân trước board_init và hành vi ESC khi mất PWM chưa được app bảo đảm.
+- Chỉ ghép servo sau khi đo nguồn ngoài, kiểm tra connector, tháo linkage để hiệu chuẩn ga đóng.
+
+| File | Trách nhiệm |
 |---|---|
-| Đo LiPo 3S | Thêm cầu chia áp/lọc/bảo vệ phù hợp cho GPIO34; chọn tỷ lệ theo điện áp cực đại; đo với đồng hồ và dùng ADC đã hiệu chuẩn. Thay công thức Wokwi trong sampleBattery; xác định ngưỡng cắt theo pack/ESC. Chưa lắp mạch đo thì firmware không giám sát được pin thật. |
-| Servo | Nguồn ngoài đúng điện áp/dòng theo model và dòng stall của cả hai servo, GND tham chiếu đúng. Hiệu chuẩn góc đóng ga/hành trình; giá trị 0° không tự bảo đảm bướm ga thật đóng. |
-| ESC | Xác nhận nhận logic 3.3 V, chu kỳ/xung stop, arming, giới hạn ga và hành vi mất xung. 1000–1600 µs đang là dải test; không khẳng định đúng mọi ESC. |
-| RCEXL | Xác nhận model, chân nguồn/tín hiệu, điện áp, loại ignition và hành vi mất PWM. GPIO26 1000/1500 µs chỉ là marker thử; chưa cho phép suy ra ignition đã OFF/ON. |
-| Dừng độc lập | E-Stop trong sketch là ngõ vào phần mềm. MCU treo/mất nguồn có thể không thực hiện safeOutputs; cần cơ chế kill phù hợp với động cơ và hồi ga đã thử. |
+| `main.c` | Một vòng điều khiển, watchdog 2 s, yield 1 tick |
+| `controller.c` | FSM, parser, owner, timeout 500 ms, interlock |
+| `board.c` | ADC1, GPIO, LEDC, UART không chờ TX, chốt cạnh E-Stop |
+| `phone.c` | SoftAP/HTTP, queue 8 lệnh, bit STOP, snapshot trạng thái |
+| `web.html` | ARM, giữ RUN, nhả/ẩn trang thì STOP |
+| `vehicle_config.h` | GPIO, thời gian, dải xung thử |
 
-Trong mô phỏng, servo nối 5V board là cách nuôi phần tử ảo. Không dùng sơ đồ đó để cấp trực tiếp hai servo tải lớn từ rail của ESP32. Theo [hướng dẫn DevKitC V4](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32/esp32-devkitc/user_guide.html), chỉ dùng một trong các đường cấp board: USB, 5V hoặc 3V3. Không nối đầu ra buck song song BEC của ESC.
+LEDC phát xung bằng phần cứng ở 50 Hz; chỉ main task cập nhật đích. Không tạo một task riêng cho mỗi servo/ESC. Tick 1 ms không bảo đảm mỗi vòng luôn hoàn tất trong 1 ms.
 
-GPIO34 là ADC1, chỉ dùng đầu vào. [Tài liệu ADC Arduino-ESP32](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/adc.html) phân biệt raw chưa hiệu chuẩn và analogReadMilliVolts; tại attenuation 11 dB, dải đo ESP32 được nêu khoảng 150–3100 mV. Vì vậy phép tuyến tính raw→12.6 V hiện tại không phải hiệu chuẩn đo LiPo. Không nối 3S hoặc 5V trực tiếp vào GPIO34.
+## Arduino/Wokwi
 
-Các giá trị trong tài liệu nguồn còn cần đối chiếu: motor ghi cả 1250 KV/1450 KV; servo ghi 6.6–7.4 V; RCEXL K1 chưa có manual đúng model; phương án đánh lửa DC/magneto chưa chốt. Không bổ sung relay hay đổi chân từ các giả định đó.
+Ba file nhập Wokwi ở `firmware/wokwi/`: `sketch.ino`, `diagram.json`, `libraries.txt`. ESP32Servo 3.2.1, Arduino core 3.3.12 và CLI 1.5.1. `scripts/build.ps1` hoặc `scripts/build.sh` tạo staging hợp lệ. Bản này giữ 5 giây, không chứa phone UI của bản C.
