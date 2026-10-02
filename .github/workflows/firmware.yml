@@ -1,0 +1,40 @@
+name: Firmware checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test actual sketch with host GPIO, ADC, Serial and Servo doubles
+        run: |
+          mkdir -p .build
+          g++ -std=c++17 -Wall -Wextra -Werror -pedantic -Itests/stubs tests/firmware_test.cpp -o .build/firmware_test
+          .build/firmware_test
+          node tests/check_wiring.mjs
+      - uses: arduino/setup-arduino-cli@v2
+        with:
+          version: '1.5.1'
+      - name: Install pinned ESP32 core and servo library
+        run: |
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install esp32:esp32@3.3.12 --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli lib install ESP32Servo@3.2.1
+      - name: Compile for ESP32-WROOM DevKit
+        run: bash scripts/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esp32-wroom-firmware
+          path: .build/esp32/
+          if-no-files-found: error
+      - name: Package Wokwi sources
+        run: zip .build/ESP32-Hybrid-Minicar-Wokwi.zip sketch.ino diagram.json libraries.txt wokwi-project.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wokwi-project
+          path: .build/ESP32-Hybrid-Minicar-Wokwi.zip

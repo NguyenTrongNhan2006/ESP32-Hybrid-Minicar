@@ -1,0 +1,9 @@
+.build/
+.tools/
+dist/
+references/
+*.vcd
+*.exe
+*.o
+*.log
+.DS_Store

@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "author": "Nhân Nguyễn",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": -19.2, "left": -91.16, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo1", "top": -30.8, "left": 57.6, "attrs": {} },
+    { "type": "wokwi-servo", "id": "servo2", "top": 65.2, "left": 67.2, "attrs": {} },
+    { "type": "wokwi-logic-analyzer", "id": "logic1", "top": -114.85, "left": 57.6, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "pot1", "top": -68.5, "left": -547.4, "attrs": { "value": "1023" } },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": -51.4,
+      "left": -441.6,
+      "attrs": { "color": "black", "xray": "1" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -99.6,
+      "left": -274.6,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led2",
+      "top": -99.6,
+      "left": -370.6,
+      "attrs": { "color": "yellow" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led3",
+      "top": -99.6,
+      "left": -322.6,
+      "attrs": { "color": "green" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 14.4,
+      "left": -269.35,
+      "rotate": 90,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 4.8,
+      "left": -317.35,
+      "rotate": 90,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 4.8,
+      "left": -365.35,
+      "rotate": 90,
+      "attrs": { "value": "330" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:18", "servo1:PWM", "blue", [ "h0" ] ],
+    [ "esp:5V", "servo1:V+", "red", [ "h-28.65", "v-278.4" ] ],
+    [ "esp:GND.1", "servo1:GND", "black", [ "h-19.05", "v-182.4" ] ],
+    [ "esp:19", "servo2:PWM", "gold", [ "h38.4", "v115.2" ] ],
+    [ "esp:5V", "servo2:V+", "red", [ "h-19.05", "v67.2", "h172.8", "v-67.2" ] ],
+    [ "esp:GND.1", "servo2:GND", "black", [ "h-9.45", "v96", "h153.6", "v-57.6" ] ],
+    [ "esp:GND.1", "logic1:GND", "black", [ "h-47.85", "v-249.6", "h134.4" ] ],
+    [ "esp:26", "logic1:D1", "green", [ "h-67.05", "v-192", "h211.2" ] ],
+    [ "esp:23", "logic1:D0", "green", [ "h38.4", "v-105.6", "h-220.8", "v-19.2" ] ],
+    [ "esp:GND.1", "led1:C", "black", [ "h0" ] ],
+    [ "led1:A", "r1:1", "red", [ "v0" ] ],
+    [ "r1:2", "esp:32", "red", [ "h0" ] ],
+    [ "esp:GND.1", "led3:C", "black", [ "h0" ] ],
+    [ "esp:GND.1", "led2:C", "black", [ "h0" ] ],
+    [ "led2:A", "r3:1", "green", [ "v0" ] ],
+    [ "led3:A", "r2:1", "green", [ "v0" ] ],
+    [ "esp:25", "r2:2", "green", [ "h0" ] ],
+    [ "esp:33", "r3:2", "green", [ "v0", "h-249.45" ] ],
+    [ "esp:27", "btn1:1.l", "green", [ "h-374.25", "v-144" ] ],
+    [ "esp:GND.1", "btn1:2.r", "black", [ "h0" ] ],
+    [ "pot1:GND", "esp:GND.1", "black", [ "v134.4", "h144" ] ],
+    [ "pot1:VCC", "esp:3V3", "red", [ "v0" ] ],
+    [ "pot1:SIG", "esp:34", "green", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
